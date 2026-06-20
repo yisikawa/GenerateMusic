@@ -55,6 +55,8 @@ class HeartMuLaGenPipeline:
         self.bnb_config = bnb_config
         self._parallel_number = num_quantizers + 1 if num_quantizers else 9
         self._muq_dim = model.config.muq_dim if model else None
+        self._caches_initialized = False
+        self._cache_bs = 0
 
     def load_heartmula(self):
         if self.model is None:
@@ -123,7 +125,13 @@ class HeartMuLaGenPipeline:
 
     def _forward(self, model_inputs: Dict[str, Any], max_audio_length_ms: int, temperature: float, topk: int, cfg_scale: float):
         self.load_heartmula()
-        self.model.setup_caches(2 if cfg_scale != 1.0 else 1)
+        bs = 2 if cfg_scale != 1.0 else 1
+        if self._caches_initialized and self._cache_bs == bs:
+            self.model.reset_caches()
+        else:
+            self.model.setup_caches(bs)
+            self._caches_initialized = True
+            self._cache_bs = bs
 
         frames = []
         with self._get_autocast_context():
@@ -169,6 +177,7 @@ class HeartMuLaGenPipeline:
             if self.model is not None:
                 del self.model
                 self.model = None
+                self._caches_initialized = False
             self._empty_cache()
             gc.collect()
             self._synchronize()
@@ -206,6 +215,7 @@ class HeartMuLaGenPipeline:
                 if self.model is not None:
                     del self.model
                     self.model = None
+                    self._caches_initialized = False
             self._empty_cache()
 
     def __call__(self, inputs: Dict[str, Any], **kwargs):
