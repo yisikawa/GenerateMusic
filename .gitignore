@@ -1,0 +1,11 @@
+venv/
+/models/
+/output/
+__pycache__/
+*.pyc
+*.pyo
+heartlib/__pycache__/
+heartlib/**/__pycache__/
+*.wav
+*.mp3
+.cache/
