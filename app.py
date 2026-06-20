@@ -253,7 +253,11 @@ with gr.Blocks(title="GenerateMusic") as demo:
                         choices=["Japanese","English","Chinese","Korean"],
                         value="Japanese", scale=1)
         song_struct = gr.Dropdown(label="曲の長さ",
-                        choices=["Short","Medium","Full"], value="Short", scale=1)
+                        choices=[
+                            ("シンプル (Verse→Chorus×1)",          "Short"),
+                            ("標準 (Verse×2→Chorus×2→Bridge)",     "Medium"),
+                            ("フル (Verse×2→Chorus×4→Bridge)",     "Full"),
+                        ], value="Medium", scale=1)
         temperature = gr.Slider(label="Temperature",
                         minimum=0.1, maximum=2.0, step=0.05, value=1.0, scale=2)
 
