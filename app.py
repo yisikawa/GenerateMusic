@@ -306,15 +306,19 @@ with gr.Blocks(title="GenerateMusic") as demo:
     with gr.Row():
         with gr.Column(scale=1):
             with gr.Row():
-                gr.Markdown("**Style Tags（編集可）**", scale=3)
-                tags_elapsed = gr.Textbox(show_label=False, scale=1, interactive=False,
-                                          max_lines=1, placeholder="生成時間")
+                with gr.Column(scale=3):
+                    gr.Markdown("**Style Tags（編集可）**")
+                with gr.Column(scale=1):
+                    tags_elapsed = gr.Textbox(show_label=False, interactive=False,
+                                              max_lines=1, placeholder="生成時間")
             style_tags = gr.Textbox(show_label=False, lines=3)
         with gr.Column(scale=2):
             with gr.Row():
-                gr.Markdown("**Lyrics（編集可）**", scale=3)
-                lyrics_elapsed = gr.Textbox(show_label=False, scale=1, interactive=False,
-                                            max_lines=1, placeholder="生成時間")
+                with gr.Column(scale=3):
+                    gr.Markdown("**Lyrics（編集可）**")
+                with gr.Column(scale=1):
+                    lyrics_elapsed = gr.Textbox(show_label=False, interactive=False,
+                                                max_lines=1, placeholder="生成時間")
             lyrics_box = gr.Textbox(show_label=False, lines=10)
 
     # ── HeartMuLa 設定 ───────────────────────────────────────────
