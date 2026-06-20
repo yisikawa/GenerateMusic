@@ -254,17 +254,10 @@ with gr.Blocks(title="GenerateMusic") as demo:
             temperature = gr.Slider(label="Temperature",
                             minimum=0.1, maximum=2.0, step=0.05, value=1.0)
 
-            gr.Markdown("### タグ生成プロンプト")
-            tags_system   = gr.Textbox(label="システム",           value=DEFAULT_TAGS_SYSTEM,
-                                       lines=8,  max_lines=20)
-            tags_user_tmpl = gr.Textbox(label="ユーザーテンプレート ({theme} {language} {song_structure})",
-                                        value=DEFAULT_TAGS_USER, lines=5, max_lines=12)
-
-            gr.Markdown("### 作詞プロンプト")
-            lyrics_system   = gr.Textbox(label="システム",         value=DEFAULT_LYRICS_SYSTEM,
-                                         lines=10, max_lines=25)
-            lyrics_user_tmpl = gr.Textbox(label="ユーザーテンプレート ({theme} {language} {song_structure} {tags})",
-                                          value=DEFAULT_LYRICS_USER, lines=5, max_lines=12)
+            tags_system      = gr.State(DEFAULT_TAGS_SYSTEM)
+            tags_user_tmpl   = gr.State(DEFAULT_TAGS_USER)
+            lyrics_system    = gr.State(DEFAULT_LYRICS_SYSTEM)
+            lyrics_user_tmpl = gr.State(DEFAULT_LYRICS_USER)
 
         # ── 右パネル: 生成 ──────────────────────────────────────
         with gr.Column(scale=2):
