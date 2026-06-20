@@ -33,9 +33,16 @@ MODEL_VERSIONS = {
 
 CODEC_VERSIONS = ["oss-20260123", "oss"]
 
+def _resolve_model_path(v: str) -> Path:
+    if v.startswith("HeartMuLa"):
+        return MODELS_DIR / v
+    elif "RL" in v or "2026" in v:
+        return MODELS_DIR / f"HeartMuLa-{v}"
+    else:
+        return MODELS_DIR / f"HeartMuLa-oss-{v}"
+
 def _available_versions() -> list[str]:
-    found = [k for k, v in MODEL_VERSIONS.items()
-             if (MODELS_DIR / f"HeartMuLa-oss-{v}").exists()]
+    found = [k for k, v in MODEL_VERSIONS.items() if _resolve_model_path(v).exists()]
     return found if found else list(MODEL_VERSIONS.keys())
 
 # ── デフォルトプロンプト ───────────────────────────────────────────
