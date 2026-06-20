@@ -238,62 +238,56 @@ def generate_music(
 
 # ── UI ────────────────────────────────────────────────────────────
 with gr.Blocks(title="GenerateMusic") as demo:
-    gr.Markdown("# GenerateMusic")
+    gr.Markdown("## GenerateMusic")
 
+    tags_system      = gr.State(DEFAULT_TAGS_SYSTEM)
+    tags_user_tmpl   = gr.State(DEFAULT_TAGS_USER)
+    lyrics_system    = gr.State(DEFAULT_LYRICS_SYSTEM)
+    lyrics_user_tmpl = gr.State(DEFAULT_LYRICS_USER)
+
+    # ── Ollama 設定（横一列）─────────────────────────────────────
     with gr.Row():
-        # ── 左パネル: 設定 ──────────────────────────────────────
-        with gr.Column(scale=1):
-            gr.Markdown("### Ollama 設定")
-            ollama_url  = gr.Textbox(label="Ollama URL", value="http://localhost:11434")
-            model       = gr.Textbox(label="モデル",     value="qwen2.5:7b")
-            language    = gr.Dropdown(label="言語",
-                            choices=["Japanese","English","Chinese","Korean"],
-                            value="Japanese")
-            song_struct = gr.Dropdown(label="曲の長さ",
-                            choices=["Short","Medium","Full"], value="Short")
-            temperature = gr.Slider(label="Temperature",
-                            minimum=0.1, maximum=2.0, step=0.05, value=1.0)
+        ollama_url  = gr.Textbox(label="Ollama URL", value="http://localhost:11434", scale=2)
+        model       = gr.Textbox(label="モデル",     value="qwen2.5:7b",             scale=1)
+        language    = gr.Dropdown(label="言語",
+                        choices=["Japanese","English","Chinese","Korean"],
+                        value="Japanese", scale=1)
+        song_struct = gr.Dropdown(label="曲の長さ",
+                        choices=["Short","Medium","Full"], value="Short", scale=1)
+        temperature = gr.Slider(label="Temperature",
+                        minimum=0.1, maximum=2.0, step=0.05, value=1.0, scale=2)
 
-            tags_system      = gr.State(DEFAULT_TAGS_SYSTEM)
-            tags_user_tmpl   = gr.State(DEFAULT_TAGS_USER)
-            lyrics_system    = gr.State(DEFAULT_LYRICS_SYSTEM)
-            lyrics_user_tmpl = gr.State(DEFAULT_LYRICS_USER)
+    # ── テーマ ＋ ボタン ─────────────────────────────────────────
+    with gr.Row():
+        theme = gr.Textbox(label="テーマ", value="春の別れ、切ない恋の歌",
+                           lines=2, max_lines=4, scale=4)
+        with gr.Column(scale=1, min_width=120):
+            btn_tags   = gr.Button("① タグ生成",  variant="secondary")
+            btn_lyrics = gr.Button("② 作詞",      variant="secondary")
+            btn_music  = gr.Button("③ 作曲開始",  variant="primary")
 
-        # ── 右パネル: 生成 ──────────────────────────────────────
-        with gr.Column(scale=2):
-            gr.Markdown("### テーマ / リクエスト")
-            theme = gr.Textbox(label="テーマ", value="春の別れ、切ない恋の歌",
-                               lines=3, max_lines=6)
+    # ── タグ ／ 歌詞（左右並列）──────────────────────────────────
+    with gr.Row():
+        style_tags = gr.Textbox(label="Style Tags（編集可）", lines=3,  scale=1)
+        lyrics_box = gr.Textbox(label="Lyrics（編集可）",     lines=10, scale=2)
 
-            with gr.Row():
-                btn_tags   = gr.Button("① タグ生成",  variant="secondary")
-                btn_lyrics = gr.Button("② 作詞",      variant="secondary")
-                btn_music  = gr.Button("③ 作曲開始",  variant="primary")
+    # ── HeartMuLa 設定 ───────────────────────────────────────────
+    with gr.Row():
+        version       = gr.Dropdown(label="バージョン",
+                            choices=_available_versions(), value=_available_versions()[0], scale=3)
+        codec_version = gr.Dropdown(label="Codec",
+                            choices=CODEC_VERSIONS, value=CODEC_VERSIONS[0], scale=2)
+        seed          = gr.Number(label="Seed (-1=ランダム)", value=-1, precision=0, scale=1)
+        keep_model_loaded = gr.Checkbox(label="keep_model_loaded", value=True,  scale=1)
+        quantize_4bit     = gr.Checkbox(label="quantize_4bit",     value=True,  scale=1)
+        offload_mode      = gr.Dropdown(label="offload_mode",
+                                choices=["auto", "aggressive"], value="auto", scale=1)
+    with gr.Row():
+        cfg_scale   = gr.Slider(label="CFG Scale", minimum=0.5, maximum=5.0,  step=0.1,  value=1.5)
+        topk        = gr.Slider(label="Top-k",     minimum=1,   maximum=200,  step=1,    value=50)
+        max_seconds = gr.Slider(label="最大秒数",  minimum=30,  maximum=600,  step=10,   value=300)
 
-            style_tags = gr.Textbox(label="Style Tags（編集可）",  lines=2)
-            lyrics_box = gr.Textbox(label="Lyrics（編集可）",      lines=12)
-
-            gr.Markdown("### HeartMuLa 設定")
-            with gr.Row():
-                version       = gr.Dropdown(label="バージョン",
-                                    choices=_available_versions(), value=_available_versions()[0])
-                codec_version = gr.Dropdown(label="Codec",
-                                    choices=CODEC_VERSIONS, value=CODEC_VERSIONS[0])
-                seed          = gr.Number(label="Seed (-1=ランダム)", value=-1, precision=0)
-            with gr.Row():
-                cfg_scale   = gr.Slider(label="CFG Scale", minimum=0.5, maximum=5.0,
-                                        step=0.1, value=1.5)
-                topk        = gr.Slider(label="Top-k",     minimum=1,   maximum=200,
-                                        step=1,   value=50)
-                max_seconds = gr.Slider(label="最大秒数",  minimum=30,  maximum=600,
-                                        step=10,  value=300)
-            with gr.Row():
-                keep_model_loaded = gr.Checkbox(label="keep_model_loaded", value=True)
-                offload_mode      = gr.Dropdown(label="offload_mode",
-                                        choices=["auto", "aggressive"], value="auto")
-                quantize_4bit     = gr.Checkbox(label="quantize_4bit (VRAM節約)",  value=True)
-
-            audio_out = gr.Audio(label="生成音楽", type="filepath")
+    audio_out = gr.Audio(label="生成音楽", type="filepath")
 
     # ── イベント ───────────────────────────────────────────────
     btn_tags.click(
