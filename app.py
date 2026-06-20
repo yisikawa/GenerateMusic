@@ -286,7 +286,7 @@ with gr.Blocks(title="GenerateMusic") as demo:
     with gr.Row():
         cfg_scale   = gr.Slider(label="CFG Scale", minimum=0.5, maximum=5.0,  step=0.1,  value=1.5)
         topk        = gr.Slider(label="Top-k",     minimum=1,   maximum=200,  step=1,    value=50)
-        max_seconds = gr.Slider(label="最大秒数",  minimum=30,  maximum=600,  step=10,   value=300)
+        max_seconds = gr.Slider(label="最大秒数",  minimum=30,  maximum=600,  step=10,   value=210)
 
     audio_out = gr.Audio(label="生成音楽", type="filepath")
 
