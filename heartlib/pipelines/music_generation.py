@@ -143,7 +143,8 @@ class HeartMuLaGenPipeline:
         frames.append(curr_token[0:1,])
 
         max_frames = max_audio_length_ms // 80
-        for i in range(max_frames):
+        from tqdm import tqdm
+        for i in tqdm(range(max_frames), desc="作曲中", unit="frame"):
             padded_token = (torch.ones((curr_token.shape[0], self._parallel_number), device=self.device, dtype=torch.long) * self.config.empty_id)
             padded_token[:, :-1] = curr_token
             padded_token = padded_token.unsqueeze(1)

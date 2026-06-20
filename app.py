@@ -180,7 +180,8 @@ def generate_music(
     style_tags, lyrics,
     version_label, codec_version, seed,
     max_seconds, topk, temperature, cfg_scale,
-    keep_model_loaded, offload_mode, quantize_4bit
+    keep_model_loaded, offload_mode, quantize_4bit,
+    progress=gr.Progress(track_tqdm=True)
 ):
     global _pipe, _pipe_key
     from heartlib.pipelines.music_generation import HeartMuLaGenPipeline
