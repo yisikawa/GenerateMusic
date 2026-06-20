@@ -63,6 +63,7 @@ Tag categories to draw from (mix these naturally):
   Tempo     : slow, mid_tempo, fast, upbeat, driving
   Instrument: piano, guitar, violin, cello, drums, bass, synthesizer, strings, flute, trumpet, choir, ukulele, accordion
   Texture   : acoustic, orchestral, minimal, layered, sparse, lush, raw, polished
+  Vocal     : male_vocal, female_vocal, duet, instrumental (use exactly one, matching the vocal type specified by the user)
 
 Example outputs:
 piano,melancholic,slow,strings,orchestral,lonely,ballad,cinematic
@@ -76,6 +77,7 @@ Generate music style tags for the following request.
 Theme / Request: {theme}
 Language context: {language}
 Song structure: {song_structure}
+Vocal type: {vocal}
 
 Remember: output ONLY the comma-separated tags, nothing else.\
 """
@@ -109,6 +111,7 @@ Write song lyrics with the following specifications.
 Theme / Request: {theme}
 Language: {language}
 Song structure: {song_structure}
+Vocal type: {vocal}
 Style tags (use these to set mood and tone): {tags}
 
 Follow the section marker rules exactly. Output only the lyrics.\
@@ -144,21 +147,22 @@ def _validate_lyrics(text: str) -> str:
 
 # ── ステップ実行関数 ───────────────────────────────────────────────
 def generate_tags(
-    ollama_url, model, language, song_structure, temperature,
+    ollama_url, model, language, song_structure, vocal, temperature,
     theme, tags_system, tags_user_tmpl
 ):
     user_msg = tags_user_tmpl.format(
-        theme=theme, language=language, song_structure=song_structure
+        theme=theme, language=language, song_structure=song_structure, vocal=vocal
     )
     raw = _ollama_chat(ollama_url, model, tags_system, user_msg, temperature)
     return _parse_tags(raw)
 
 def generate_lyrics(
-    ollama_url, model, language, song_structure, temperature,
+    ollama_url, model, language, song_structure, vocal, temperature,
     theme, style_tags, lyrics_system, lyrics_user_tmpl
 ):
     user_msg = lyrics_user_tmpl.format(
-        theme=theme, language=language, song_structure=song_structure, tags=style_tags
+        theme=theme, language=language, song_structure=song_structure,
+        vocal=vocal, tags=style_tags
     )
     raw = _ollama_chat(ollama_url, model, lyrics_system, user_msg, temperature)
     return _validate_lyrics(raw)
@@ -269,6 +273,13 @@ with gr.Blocks(title="GenerateMusic") as demo:
                             ("標準 (Verse×2→Chorus×2→Bridge)",     "Medium"),
                             ("フル (Verse×2→Chorus×4→Bridge)",     "Full"),
                         ], value="Medium", scale=1)
+        vocal = gr.Dropdown(label="ボーカル",
+                        choices=[
+                            ("女性ボーカル", "female_vocal"),
+                            ("男性ボーカル", "male_vocal"),
+                            ("デュエット",   "duet"),
+                            ("ボーカル無し", "instrumental"),
+                        ], value="female_vocal", scale=1)
         temperature = gr.Slider(label="Temperature",
                         minimum=0.1, maximum=2.0, step=0.05, value=1.0, scale=2)
 
@@ -310,14 +321,14 @@ with gr.Blocks(title="GenerateMusic") as demo:
     # ── イベント ───────────────────────────────────────────────
     btn_tags.click(
         fn=generate_tags,
-        inputs=[ollama_url, model, language, song_struct, temperature,
+        inputs=[ollama_url, model, language, song_struct, vocal, temperature,
                 theme, tags_system, tags_user_tmpl],
         outputs=style_tags,
         concurrency_limit=4,
     )
     btn_lyrics.click(
         fn=generate_lyrics,
-        inputs=[ollama_url, model, language, song_struct, temperature,
+        inputs=[ollama_url, model, language, song_struct, vocal, temperature,
                 theme, style_tags, lyrics_system, lyrics_user_tmpl],
         outputs=lyrics_box,
         concurrency_limit=4,
