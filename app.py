@@ -278,7 +278,7 @@ with gr.Blocks(title="GenerateMusic") as demo:
                             ("女性ボーカル", "female_vocal"),
                             ("男性ボーカル", "male_vocal"),
                             ("デュエット",   "duet"),
-                            ("ボーカル無し", "instrumental"),
+                            ("インスツルメント", "instrumental"),
                         ], value="female_vocal", scale=1)
         temperature = gr.Slider(label="Temperature",
                         minimum=0.1, maximum=2.0, step=0.05, value=1.0, scale=2)
