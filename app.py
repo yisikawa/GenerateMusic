@@ -146,26 +146,32 @@ def _validate_lyrics(text: str) -> str:
     return text.strip()
 
 # ── ステップ実行関数 ───────────────────────────────────────────────
+def _fmt_elapsed(seconds: float) -> str:
+    mins, secs = divmod(int(seconds), 60)
+    return f"{mins}分{secs}秒" if mins else f"{secs}秒"
+
 def generate_tags(
     ollama_url, model, language, song_structure, vocal, temperature,
     theme, tags_system, tags_user_tmpl
 ):
+    t0 = time.time()
     user_msg = tags_user_tmpl.format(
         theme=theme, language=language, song_structure=song_structure, vocal=vocal
     )
     raw = _ollama_chat(ollama_url, model, tags_system, user_msg, temperature)
-    return _parse_tags(raw)
+    return _parse_tags(raw), _fmt_elapsed(time.time() - t0)
 
 def generate_lyrics(
     ollama_url, model, language, song_structure, vocal, temperature,
     theme, style_tags, lyrics_system, lyrics_user_tmpl
 ):
+    t0 = time.time()
     user_msg = lyrics_user_tmpl.format(
         theme=theme, language=language, song_structure=song_structure,
         vocal=vocal, tags=style_tags
     )
     raw = _ollama_chat(ollama_url, model, lyrics_system, user_msg, temperature)
-    return _validate_lyrics(raw)
+    return _validate_lyrics(raw), _fmt_elapsed(time.time() - t0)
 
 _pipe      = None
 _pipe_key  = None  # (version, codec_version, quantize_4bit)
@@ -234,10 +240,13 @@ def generate_music(
                 keep_model_loaded=keep_model_loaded,
                 offload_mode=offload_mode,
             )
-        elapsed = time.time() - t0
-        mins, secs = divmod(int(elapsed), 60)
-        elapsed_str = f"{mins}分{secs}秒" if mins else f"{secs}秒"
-        print(f"[INFO] 生成完了: {save_path} ({elapsed_str})")
+        elapsed_str = _fmt_elapsed(time.time() - t0)
+
+        import soundfile as sf
+        info = sf.info(save_path)
+        dur_mins, dur_secs = divmod(int(info.duration), 60)
+        duration_str = f"{dur_mins}分{dur_secs}秒" if dur_mins else f"{dur_secs}秒"
+        print(f"[INFO] 生成完了: {save_path} ({elapsed_str}, {duration_str})")
 
         if not keep_model_loaded:
             _pipe = None; _pipe_key = None
@@ -245,7 +254,7 @@ def generate_music(
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        return save_path, elapsed_str
+        return save_path, elapsed_str, duration_str
 
     except Exception as e:
         print(f"[ERROR]\n{traceback.format_exc()}")
@@ -295,8 +304,18 @@ with gr.Blocks(title="GenerateMusic") as demo:
 
     # ── タグ ／ 歌詞（左右並列）──────────────────────────────────
     with gr.Row():
-        style_tags = gr.Textbox(label="Style Tags（編集可）", lines=3,  scale=1)
-        lyrics_box = gr.Textbox(label="Lyrics（編集可）",     lines=10, scale=2)
+        with gr.Column(scale=1):
+            with gr.Row():
+                gr.Markdown("**Style Tags（編集可）**", scale=3)
+                tags_elapsed = gr.Textbox(show_label=False, scale=1, interactive=False,
+                                          max_lines=1, placeholder="生成時間")
+            style_tags = gr.Textbox(show_label=False, lines=3)
+        with gr.Column(scale=2):
+            with gr.Row():
+                gr.Markdown("**Lyrics（編集可）**", scale=3)
+                lyrics_elapsed = gr.Textbox(show_label=False, scale=1, interactive=False,
+                                            max_lines=1, placeholder="生成時間")
+            lyrics_box = gr.Textbox(show_label=False, lines=10)
 
     # ── HeartMuLa 設定 ───────────────────────────────────────────
     with gr.Row():
@@ -315,22 +334,23 @@ with gr.Blocks(title="GenerateMusic") as demo:
         max_seconds = gr.Slider(label="最大秒数",  minimum=30,  maximum=600,  step=10,   value=210)
 
     with gr.Row():
-        audio_out    = gr.Audio(label="生成音楽", type="filepath", scale=4)
-        elapsed_text = gr.Textbox(label="作曲時間", scale=1, interactive=False, max_lines=1)
+        audio_out     = gr.Audio(label="生成音楽", type="filepath", scale=4)
+        elapsed_text  = gr.Textbox(label="作曲時間", scale=1, interactive=False, max_lines=1)
+        duration_text = gr.Textbox(label="曲の長さ", scale=1, interactive=False, max_lines=1)
 
     # ── イベント ───────────────────────────────────────────────
     btn_tags.click(
         fn=generate_tags,
         inputs=[ollama_url, model, language, song_struct, vocal, temperature,
                 theme, tags_system, tags_user_tmpl],
-        outputs=style_tags,
+        outputs=[style_tags, tags_elapsed],
         concurrency_limit=4,
     )
     btn_lyrics.click(
         fn=generate_lyrics,
         inputs=[ollama_url, model, language, song_struct, vocal, temperature,
                 theme, style_tags, lyrics_system, lyrics_user_tmpl],
-        outputs=lyrics_box,
+        outputs=[lyrics_box, lyrics_elapsed],
         concurrency_limit=4,
     )
     btn_music.click(
@@ -338,7 +358,7 @@ with gr.Blocks(title="GenerateMusic") as demo:
         inputs=[style_tags, lyrics_box, version, codec_version, seed,
                 max_seconds, topk, temperature, cfg_scale,
                 keep_model_loaded, offload_mode, quantize_4bit],
-        outputs=[audio_out, elapsed_text],
+        outputs=[audio_out, elapsed_text, duration_text],
         concurrency_limit=1,
     )
 
