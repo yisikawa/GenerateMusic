@@ -257,14 +257,15 @@ with gr.Blocks(title="GenerateMusic") as demo:
         temperature = gr.Slider(label="Temperature",
                         minimum=0.1, maximum=2.0, step=0.05, value=1.0, scale=2)
 
-    # ── テーマ ＋ ボタン ─────────────────────────────────────────
+    # ── テーマ ────────────────────────────────────────────────────
+    theme = gr.Textbox(label="テーマ", value="春の別れ、切ない恋の歌",
+                       lines=2, max_lines=4)
+
+    # ── ボタン（1行）─────────────────────────────────────────────
     with gr.Row():
-        theme = gr.Textbox(label="テーマ", value="春の別れ、切ない恋の歌",
-                           lines=2, max_lines=4, scale=4)
-        with gr.Column(scale=1, min_width=120):
-            btn_tags   = gr.Button("① タグ生成",  variant="secondary")
-            btn_lyrics = gr.Button("② 作詞",      variant="secondary")
-            btn_music  = gr.Button("③ 作曲開始",  variant="primary")
+        btn_tags   = gr.Button("① タグ生成",  variant="secondary")
+        btn_lyrics = gr.Button("② 作詞",      variant="secondary")
+        btn_music  = gr.Button("③ 作曲開始",  variant="primary")
 
     # ── タグ ／ 歌詞（左右並列）──────────────────────────────────
     with gr.Row():
