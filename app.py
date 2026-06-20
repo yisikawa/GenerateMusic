@@ -218,6 +218,7 @@ def generate_music(
         save_path = str(OUTPUT_DIR / f"music_{seed}.wav")
         print(f"[INFO] Generating: seed={seed}")
 
+        t0 = time.time()
         with torch.inference_mode():
             _pipe(
                 {"lyrics": lyrics, "tags": style_tags},
@@ -229,7 +230,10 @@ def generate_music(
                 keep_model_loaded=keep_model_loaded,
                 offload_mode=offload_mode,
             )
-        print(f"[INFO] 生成完了: {save_path}")
+        elapsed = time.time() - t0
+        mins, secs = divmod(int(elapsed), 60)
+        elapsed_str = f"{mins}分{secs}秒" if mins else f"{secs}秒"
+        print(f"[INFO] 生成完了: {save_path} ({elapsed_str})")
 
         if not keep_model_loaded:
             _pipe = None; _pipe_key = None
@@ -237,7 +241,7 @@ def generate_music(
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        return save_path
+        return save_path, elapsed_str
 
     except Exception as e:
         print(f"[ERROR]\n{traceback.format_exc()}")
@@ -299,7 +303,9 @@ with gr.Blocks(title="GenerateMusic") as demo:
         topk        = gr.Slider(label="Top-k",     minimum=1,   maximum=200,  step=1,    value=50)
         max_seconds = gr.Slider(label="最大秒数",  minimum=30,  maximum=600,  step=10,   value=210)
 
-    audio_out = gr.Audio(label="生成音楽", type="filepath")
+    with gr.Row():
+        audio_out    = gr.Audio(label="生成音楽", type="filepath", scale=4)
+        elapsed_text = gr.Textbox(label="作曲時間", scale=1, interactive=False, max_lines=1)
 
     # ── イベント ───────────────────────────────────────────────
     btn_tags.click(
@@ -321,7 +327,7 @@ with gr.Blocks(title="GenerateMusic") as demo:
         inputs=[style_tags, lyrics_box, version, codec_version, seed,
                 max_seconds, topk, temperature, cfg_scale,
                 keep_model_loaded, offload_mode, quantize_4bit],
-        outputs=audio_out,
+        outputs=[audio_out, elapsed_text],
         concurrency_limit=1,
     )
 
