@@ -60,13 +60,13 @@ async def generate_music(request: MusicRequest):
         task = asyncio.create_task(run_pipeline())
         while True:
             try:
-                event = await asyncio.wait_for(queue.get(), timeout=600.0)
+                event = await asyncio.wait_for(queue.get(), timeout=30.0)
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                 if event["type"] in ("done", "error"):
                     break
             except asyncio.TimeoutError:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'タイムアウト'})}\n\n"
-                break
+                # 30秒間イベントがなければハートビートを送って接続を維持
+                yield ": heartbeat\n\n"
         await task
 
     return StreamingResponse(
