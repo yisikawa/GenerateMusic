@@ -3,6 +3,8 @@
 Ollama（ローカルLLM）で歌詞とスタイルタグを生成し、[HeartMuLa](https://github.com/HeartMuLa/heartlib) で楽曲を生成するアプリです。  
 **Backend（Python / FastAPI）** と **Frontend（TypeScript / React）** に分離した構成で、Python の依存関係競合を最小化しています。
 
+![アプリ画面](画面.png)
+
 ---
 
 ## 機能
