@@ -4,6 +4,7 @@ import {
   generateLyrics,
   generateMusic,
   fetchVersions,
+  fetchOllamaModels,
   type MusicEvent,
 } from './api/client'
 
@@ -14,9 +15,27 @@ const FALLBACK_VERSIONS = [
 ]
 const FALLBACK_CODECS = ['oss-20260123', 'oss']
 
+const STYLE_TEMPLATES: { label: string; tags: string }[] = [
+  { label: '— テンプレートを選択 —', tags: '' },
+  { label: '🎵 J-POP 切ない（女性ボーカル）', tags: 'j-pop,piano,melancholic,slow,strings,nostalgic,cinematic,female vocal' },
+  { label: '🌸 J-POP アップテンポ（女性ボーカル）', tags: 'j-pop,pop,synth,energetic,uptempo,happy,layered,modern,female vocal' },
+  { label: '🎤 J-POP バラード（男性ボーカル）', tags: 'j-pop,ballad,piano,strings,romantic,slow,cinematic,powerful vocals,male vocal' },
+  { label: '☕ Lo-Fi チル（インスト）', tags: 'lo-fi,piano,chill,slow,acoustic,nostalgic,dreamy,minimalist,instrumental' },
+  { label: '🎬 シネマティック・エピック（インスト）', tags: 'cinematic,orchestra,epic,strings,piano,atmospheric,choir,layered,instrumental' },
+  { label: '🎸 アコースティックバラード（女性ボーカル）', tags: 'ballad,acoustic guitar,folk,sad,slow,romantic,piano,raw,female vocal' },
+  { label: '💜 K-POP アイドル', tags: 'k-pop,pop,synth,energetic,modern,layered,uptempo,harmonies,female vocal' },
+  { label: '🎷 ジャズバー（インスト）', tags: 'jazz,piano,saxophone,trumpet,chill,slow,nostalgic,atmospheric,instrumental' },
+  { label: '🤘 ロックアンセム（男性ボーカル）', tags: 'rock,electric guitar,drums,bass,energetic,fast,epic,raw,male vocal' },
+  { label: '💙 R&B ソウル（女性ボーカル）', tags: 'r&b,soul,piano,romantic,groovy,mid-tempo,harmonies,atmospheric,female vocal' },
+  { label: '🎮 アニメ/ゲームBGM（インスト）', tags: 'j-pop,cinematic,orchestra,epic,synth,strings,energetic,modern,instrumental' },
+  { label: '🔥 EDM ダンス（インスト）', tags: 'edm,electronic,synth,808,energetic,fast,layered,intense,instrumental' },
+  { label: '🎙️ ヒップホップ（男性ボーカル）', tags: 'hip-hop,808,drums,bass,dark,mid-tempo,layered,modern,rap,male vocal' },
+]
+
 export default function App() {
   // ── Ollama settings ─────────────────────────────────────────────
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434')
+  const [ollamaModels, setOllamaModels] = useState<string[]>([])
   const [model, setModel] = useState('qwen2.5:7b')
   const [language, setLanguage] = useState('Japanese')
   const [songStructure, setSongStructure] = useState('Medium')
@@ -54,6 +73,7 @@ export default function App() {
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
 
   // ── UI state ─────────────────────────────────────────────────────
+  const [templateKey, setTemplateKey] = useState(0)
   const [tagsLoading, setTagsLoading] = useState(false)
   const [lyricsLoading, setLyricsLoading] = useState(false)
   const [musicLoading, setMusicLoading] = useState(false)
@@ -73,6 +93,15 @@ export default function App() {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    fetchOllamaModels(ollamaUrl)
+      .then(models => {
+        setOllamaModels(models)
+        if (models.length && !models.includes(model)) setModel(models[0])
+      })
+      .catch(() => setOllamaModels([]))
+  }, [ollamaUrl])
 
   const handleTagsGenerate = useCallback(async () => {
     setTagsLoading(true)
@@ -183,7 +212,13 @@ export default function App() {
           </label>
           <label className="field-sm">
             <span>モデル</span>
-            <input value={model} onChange={e => setModel(e.target.value)} />
+            {ollamaModels.length > 0 ? (
+              <select value={model} onChange={e => setModel(e.target.value)}>
+                {ollamaModels.map(m => <option key={m}>{m}</option>)}
+              </select>
+            ) : (
+              <input value={model} onChange={e => setModel(e.target.value)} placeholder="Ollama未接続" />
+            )}
           </label>
           <label className="field-sm">
             <span>言語</span>
@@ -265,6 +300,23 @@ export default function App() {
           <div className="panel-header">
             <strong>Style Tags（編集可）</strong>
             <span className="elapsed">{tagsElapsed}</span>
+          </div>
+          <div className="row wrap" style={{ marginBottom: '0.5rem', gap: '0.5rem', alignItems: 'center' }}>
+            <select
+              key={templateKey}
+              style={{ flex: 1, minWidth: 0 }}
+              defaultValue=""
+              onChange={e => {
+                if (e.target.value) {
+                  setTags(e.target.value)
+                  setTemplateKey(k => k + 1)
+                }
+              }}
+            >
+              {STYLE_TEMPLATES.map((t, i) => (
+                <option key={i} value={t.tags}>{t.label}</option>
+              ))}
+            </select>
           </div>
           <textarea
             value={tags}

@@ -112,3 +112,10 @@ export async function fetchVersions(): Promise<{ versions: string[]; codec_versi
   if (!res.ok) throw new Error('versions fetch failed')
   return res.json()
 }
+
+export async function fetchOllamaModels(ollamaUrl: string): Promise<string[]> {
+  const res = await fetch(`/api/ollama-models?url=${encodeURIComponent(ollamaUrl)}`)
+  if (!res.ok) throw new Error('ollama models fetch failed')
+  const data = await res.json() as { models: string[] }
+  return data.models
+}

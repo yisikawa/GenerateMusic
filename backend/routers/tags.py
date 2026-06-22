@@ -1,13 +1,23 @@
 import asyncio
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from services.ollama import ollama_chat, parse_tags
+from services.ollama import list_models, ollama_chat, parse_tags
 from services.prompts import DEFAULT_TAGS_SYSTEM, DEFAULT_TAGS_USER
 
 router = APIRouter()
+
+
+@router.get("/api/ollama-models")
+async def get_ollama_models(url: str = Query(default="http://localhost:11434")):
+    try:
+        loop = asyncio.get_running_loop()
+        models = await loop.run_in_executor(None, lambda: list_models(url))
+        return {"models": models}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Ollama接続エラー: {e}")
 
 
 class TagsRequest(BaseModel):

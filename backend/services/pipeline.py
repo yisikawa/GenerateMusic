@@ -114,10 +114,13 @@ def generate(request: Any, progress_callback: Optional[Callable[[int, int], None
         save_path = str(OUTPUT_DIR / f"music_{seed}.wav")
         print(f"[INFO] Generating: seed={seed}")
 
+        is_instrumental = "instrumental" in request.tags.lower()
+        lyrics = "[instrumental]" if is_instrumental else request.lyrics
+
         t0 = time.time()
         with torch.inference_mode(), _patch_tqdm(progress_callback):
             _pipe(
-                {"lyrics": request.lyrics, "tags": request.tags},
+                {"lyrics": lyrics, "tags": request.tags},
                 max_audio_length_ms=request.max_seconds * 1000,
                 save_path=save_path,
                 topk=request.topk,

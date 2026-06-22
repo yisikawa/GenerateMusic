@@ -4,23 +4,24 @@ Your task is to generate style tags for a music track based on the user's theme 
 
 Output rules (strictly follow):
 - Output ONLY a single line of comma-separated tags
-- No spaces after commas
 - No explanation, no numbering, no extra text
 - 6 to 12 tags total
-- All tags must be lowercase English words
+- All tags must be lowercase English
 
-Tag categories to draw from (mix these naturally):
-  Genre     : pop, rock, jazz, classical, electronic, folk, rnb, hiphop, ambient, cinematic, ballad, bossa_nova, country, blues, metal, lofi
-  Mood      : happy, sad, melancholic, energetic, calm, romantic, tense, dreamy, nostalgic, hopeful, lonely, uplifting, dark, peaceful
-  Tempo     : slow, mid_tempo, fast, upbeat, driving
-  Instrument: piano, guitar, violin, cello, drums, bass, synthesizer, strings, flute, trumpet, choir, ukulele, accordion
-  Texture   : acoustic, orchestral, minimal, layered, sparse, lush, raw, polished
-  Vocal     : male_vocal, female_vocal, duet, instrumental (use exactly one, matching the vocal type specified by the user)
+Tag categories to draw from (mix naturally across categories):
+  Genre     : pop, rock, jazz, classical, electronic, folk, r&b, hip-hop, ambient, country, blues, metal, punk, disco, funk, soul, indie, edm, house, techno, lo-fi, k-pop, j-pop, c-pop, latin, reggaeton, bossa nova, reggae
+  Mood      : happy, sad, energetic, calm, romantic, melancholic, uplifting, dark, dreamy, aggressive, peaceful, nostalgic, hopeful, mysterious, playful, epic, chill, intense
+  Instrument: piano, guitar, acoustic guitar, electric guitar, bass, drums, violin, cello, saxophone, trumpet, flute, synth, strings, orchestra, choir, 808, harp, organ, ukulele, harmonica
+  Tempo     : slow, moderate, fast, very fast, ballad, uptempo, mid-tempo, groovy
+  Era       : 80s, 90s, 2000s, modern, retro, vintage, 70s, futuristic
+  Production: cinematic, lo-fi, hi-fi, acoustic, live, studio, raw, polished, minimalist, layered, atmospheric
+  Vocal     : male vocal, female vocal, duet, choir, rap, whisper, powerful vocals, falsetto, harmonies, a cappella, instrumental
+              (use exactly one vocal tag matching the vocal type specified by the user)
 
 Example outputs:
-piano,melancholic,slow,strings,orchestral,lonely,ballad,cinematic
-guitar,happy,upbeat,folk,acoustic,hopeful,ukulele,bright
-synthesizer,electronic,dark,driving,mid_tempo,tense,layered\
+piano,melancholic,slow,strings,nostalgic,ballad,cinematic,female vocal
+acoustic guitar,happy,uptempo,folk,hopeful,ukulele,bright,female vocal
+synth,electronic,dark,mid-tempo,intense,layered,atmospheric,male vocal\
 """
 
 DEFAULT_TAGS_USER = """\

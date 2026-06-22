@@ -3,6 +3,12 @@ import re
 import requests
 
 
+def list_models(url: str) -> list[str]:
+    resp = requests.get(f"{url}/api/tags", timeout=5)
+    resp.raise_for_status()
+    return [m["name"] for m in resp.json().get("models", [])]
+
+
 def ollama_chat(url: str, model: str, system: str, user: str, temperature: float) -> str:
     payload = {
         "model": model,
@@ -18,12 +24,15 @@ def ollama_chat(url: str, model: str, system: str, user: str, temperature: float
     return resp.json()["message"]["content"].strip()
 
 
+_TAG_RE = re.compile(r'^[a-z0-9][a-z0-9&/ -]*(,[a-z0-9][a-z0-9&/ -]*)+$')
+_TOKEN_RE = re.compile(r'[a-z0-9]+(?:[&/ -][a-z0-9]+)*')
+
 def parse_tags(raw: str) -> str:
     for line in raw.splitlines():
         line = line.strip()
-        if re.match(r'^[a-z_]+(,[a-z_]+)+$', line):
+        if _TAG_RE.match(line):
             return line
-    tokens = re.findall(r'[a-z_]+', raw.lower())
+    tokens = _TOKEN_RE.findall(raw.lower())
     return ",".join(tokens[:12]) if tokens else "pop,vocal"
 
 
