@@ -17,19 +17,25 @@ const FALLBACK_CODECS = ['oss-20260123', 'oss']
 
 const STYLE_TEMPLATES: { label: string; tags: string }[] = [
   { label: '— テンプレートを選択 —', tags: '' },
+  // ── デュエット ──────────────────────────────────────────────────────
+  { label: '👫 J-POP バラードデュエット（男女）', tags: 'j-pop,ballad,piano,strings,romantic,slow,cinematic,harmonies,male vocal,female vocal,duet' },
+  { label: '🌟 J-POP ポップデュエット（男女）', tags: 'j-pop,pop,synth,uptempo,modern,layered,harmonies,call and response,male vocal,female vocal,duet' },
+  // ── 女性ボーカル ────────────────────────────────────────────────────
   { label: '🎵 J-POP 切ない（女性ボーカル）', tags: 'j-pop,piano,melancholic,slow,strings,nostalgic,cinematic,female vocal' },
   { label: '🌸 J-POP アップテンポ（女性ボーカル）', tags: 'j-pop,pop,synth,energetic,uptempo,happy,layered,modern,female vocal' },
+  { label: '🏙️ シティポップ（女性ボーカル）', tags: 'city pop,j-pop,guitar,bass,groovy,mid-tempo,nostalgic,dreamy,female vocal' },
+  { label: '🎸 アコースティックバラード（女性ボーカル）', tags: 'ballad,acoustic guitar,folk,sad,slow,romantic,piano,raw,female vocal' },
+  { label: '💜 K-POP アイドル（女性ボーカル）', tags: 'k-pop,pop,synth,energetic,modern,layered,uptempo,harmonies,female vocal' },
+  { label: '💙 R&B ソウル（女性ボーカル）', tags: 'r&b,soul,piano,romantic,groovy,mid-tempo,harmonies,atmospheric,female vocal' },
+  { label: '🌺 アニソン（女性ボーカル）', tags: 'j-pop,anime,synth,strings,energetic,emotional,cinematic,powerful,female vocal' },
+  // ── 男性ボーカル ────────────────────────────────────────────────────
   { label: '🎤 J-POP バラード（男性ボーカル）', tags: 'j-pop,ballad,piano,strings,romantic,slow,cinematic,powerful vocals,male vocal' },
+  { label: '🤘 ロックアンセム（男性ボーカル）', tags: 'rock,electric guitar,drums,bass,energetic,fast,epic,raw,male vocal' },
+  { label: '🎙️ ヒップホップ（男性ボーカル）', tags: 'hip-hop,808,drums,bass,dark,mid-tempo,layered,modern,rap,male vocal' },
+  { label: '🎺 ジャズボーカル（男性ボーカル）', tags: 'jazz,piano,saxophone,trumpet,swing,mid-tempo,smooth,atmospheric,male vocal' },
+  // ── インスト ────────────────────────────────────────────────────────
   { label: '☕ Lo-Fi チル（インスト）', tags: 'lo-fi,piano,chill,slow,acoustic,nostalgic,dreamy,minimalist,instrumental' },
   { label: '🎬 シネマティック・エピック（インスト）', tags: 'cinematic,orchestra,epic,strings,piano,atmospheric,choir,layered,instrumental' },
-  { label: '🎸 アコースティックバラード（女性ボーカル）', tags: 'ballad,acoustic guitar,folk,sad,slow,romantic,piano,raw,female vocal' },
-  { label: '💜 K-POP アイドル', tags: 'k-pop,pop,synth,energetic,modern,layered,uptempo,harmonies,female vocal' },
-  { label: '🎷 ジャズバー（インスト）', tags: 'jazz,piano,saxophone,trumpet,chill,slow,nostalgic,atmospheric,instrumental' },
-  { label: '🤘 ロックアンセム（男性ボーカル）', tags: 'rock,electric guitar,drums,bass,energetic,fast,epic,raw,male vocal' },
-  { label: '💙 R&B ソウル（女性ボーカル）', tags: 'r&b,soul,piano,romantic,groovy,mid-tempo,harmonies,atmospheric,female vocal' },
-  { label: '🎮 アニメ/ゲームBGM（インスト）', tags: 'j-pop,cinematic,orchestra,epic,synth,strings,energetic,modern,instrumental' },
-  { label: '🔥 EDM ダンス（インスト）', tags: 'edm,electronic,synth,808,energetic,fast,layered,intense,instrumental' },
-  { label: '🎙️ ヒップホップ（男性ボーカル）', tags: 'hip-hop,808,drums,bass,dark,mid-tempo,layered,modern,rap,male vocal' },
 ]
 
 export default function App() {
