@@ -13,6 +13,9 @@ Ollama（ローカルLLM）で歌詞とスタイルタグを生成し、[HeartMu
 - **スタイルテンプレート** : デュエット・女性ボーカル・男性ボーカルを中心に 15 種類のプリセットからワンクリックでタグを設定（インスト 2 種含む）
 - **② 作詞** : Ollama にスタイルタグを含むプロンプトを渡し、セクションマーカー付きの歌詞を自動生成
 - **③ 作曲開始** : HeartMuLa が歌詞とタグから楽曲を生成し、WAV ファイルとして保存（SSE でリアルタイム進捗表示）
+- **ジョブキュー** : 作曲リクエストはキューに登録され、単一ワーカーが順番に処理（GPU は1つのため直列実行）。2件目以降は「待機中（N番目）」と即座に表示され、1件目の完了後に自動で開始
+- **キャンセル** : 待機中・実行中どちらのジョブもキャンセル可能。実行中のキャンセルは数秒以内に停止し、VRAM を解放（`keep_model_loaded` OFF時）
+- **SSE 再接続** : 作曲中にページをリロード・接続が切れても、ジョブ自体はバックエンドで継続。再接続すれば進捗表示が復帰
 - **インストゥルメンタル対応** : タグに `instrumental` が含まれる場合、歌詞の代わりに `[instrumental]` マーカーを渡してボーカルなしで生成
 - **Ollama モデル自動取得** : Ollama URL 入力後にインストール済みモデルをドロップダウンで選択可能（未接続時はテキスト入力にフォールバック）
 - タグ・歌詞は画面上で直接編集可能
@@ -40,17 +43,22 @@ Ollama（ローカルLLM）で歌詞とスタイルタグを生成し、[HeartMu
 ```
 GenerateMusic/
 ├── backend/                    # Python / FastAPI
-│   ├── main.py                 # FastAPI エントリーポイント（port 8001）
+│   ├── main.py                 # FastAPI エントリーポイント（port 8001、lifespan でジョブワーカー起動）
+│   ├── schemas.py               # Pydantic モデル集約（デフォルト値の単一ソース）
+│   ├── utils.py                 # format_elapsed など共通関数
 │   ├── requirements.txt        # ML専用依存（gradio 不要）
 │   ├── start.bat               # バックエンド起動スクリプト
 │   ├── venv/                   # Python 仮想環境
 │   ├── routers/
 │   │   ├── tags.py             # POST /api/tags
 │   │   ├── lyrics.py           # POST /api/lyrics
-│   │   └── music.py            # POST /api/music（SSE）/ GET /api/versions
+│   │   └── music.py            # POST /api/music（ジョブ登録）/ GET /api/music/{id}/events（SSE購読）
+│   │                            #   / GET /api/music/{id}（スナップショット）/ POST /api/music/{id}/cancel
+│   │                            #   / GET /api/config（バージョン一覧＋デフォルト値）
 │   └── services/
 │       ├── ollama.py           # Ollama API ラッパー
-│       ├── pipeline.py         # HeartMuLa パイプライン管理
+│       ├── jobs.py              # JobManager（キュー・単一ワーカー・SSE配信）
+│       ├── pipeline.py         # HeartMuLa パイプライン管理（純粋な生成処理）
 │       └── prompts.py          # システム/ユーザープロンプト定数
 ├── frontend/                   # TypeScript / React + Vite（port 5170）
 │   ├── src/
@@ -204,4 +212,4 @@ npm run dev
 - `heartlib/` はローカルコピーです。ComfyUI 版をベースに `comfy.utils` 依存を除去しています
 - 初回の作曲時はモデルのロードに 5〜10 分かかります（RTX 3060 + 4bit 量子化の場合）
 - GPU VRAM が不足する場合は `quantize_4bit` を ON にしてください
-- 作曲は同時に 1 件のみ実行できます（内部で排他ロック制御）
+- 作曲リクエストはジョブキューに登録され、単一ワーカーが直列に処理します（GPU は1つのため並列実行はしません）。2件目以降は待機順が即座に表示され、キャンセルも可能です
