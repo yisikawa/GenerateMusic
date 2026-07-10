@@ -1,4 +1,6 @@
+import asyncio
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 _BACKEND_DIR = Path(__file__).parent
@@ -15,11 +17,20 @@ from fastapi.staticfiles import StaticFiles
 from routers.tags import router as tags_router
 from routers.lyrics import router as lyrics_router
 from routers.music import router as music_router
+from services.jobs import job_manager
 
 OUTPUT_DIR = _PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-app = FastAPI(title="GenerateMusic API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    job_manager.start(asyncio.get_running_loop())
+    yield
+    job_manager.stop()
+
+
+app = FastAPI(title="GenerateMusic API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

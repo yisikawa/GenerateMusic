@@ -2,18 +2,13 @@ import { useState, useCallback, useEffect } from 'react'
 import {
   generateTags,
   generateLyrics,
-  generateMusic,
-  fetchVersions,
+  startMusic,
+  watchJob,
+  cancelJob,
+  fetchConfig,
   fetchOllamaModels,
   type MusicEvent,
 } from './api/client'
-
-const FALLBACK_VERSIONS = [
-  '3B-happy-new-year (latest)',
-  'RL-oss-3B-20260123',
-  '3B (base)',
-]
-const FALLBACK_CODECS = ['oss-20260123', 'oss']
 
 const STYLE_TEMPLATES: { label: string; tags: string }[] = [
   { label: '— テンプレートを選択 —', tags: '' },
@@ -40,16 +35,16 @@ const STYLE_TEMPLATES: { label: string; tags: string }[] = [
 
 export default function App() {
   // ── Ollama settings ─────────────────────────────────────────────
-  const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434')
+  const [ollamaUrl, setOllamaUrl] = useState('')
   const [ollamaModels, setOllamaModels] = useState<string[]>([])
-  const [model, setModel] = useState('qwen2.5:7b')
-  const [language, setLanguage] = useState('Japanese')
-  const [songStructure, setSongStructure] = useState('Medium')
-  const [vocal, setVocal] = useState('female_vocal')
+  const [model, setModel] = useState('')
+  const [language, setLanguage] = useState('')
+  const [songStructure, setSongStructure] = useState('')
+  const [vocal, setVocal] = useState('')
   const [temperature, setTemperature] = useState(1.0)
 
   // ── Theme ────────────────────────────────────────────────────────
-  const [theme, setTheme] = useState('春の別れ、切ない恋の歌')
+  const [theme, setTheme] = useState('')
 
   // ── Generated content ────────────────────────────────────────────
   const [tags, setTags] = useState('')
@@ -58,10 +53,10 @@ export default function App() {
   const [lyricsElapsed, setLyricsElapsed] = useState('')
 
   // ── HeartMuLa settings ──────────────────────────────────────────
-  const [availableVersions, setAvailableVersions] = useState<string[]>(FALLBACK_VERSIONS)
-  const [availableCodecs, setAvailableCodecs] = useState<string[]>(FALLBACK_CODECS)
-  const [versionLabel, setVersionLabel] = useState(FALLBACK_VERSIONS[0])
-  const [codecVersion, setCodecVersion] = useState(FALLBACK_CODECS[0])
+  const [availableVersions, setAvailableVersions] = useState<string[]>([])
+  const [availableCodecs, setAvailableCodecs] = useState<string[]>([])
+  const [versionLabel, setVersionLabel] = useState('')
+  const [codecVersion, setCodecVersion] = useState('')
   const [seed, setSeed] = useState(-1)
   const [keepModelLoaded, setKeepModelLoaded] = useState(false)
   const [quantize4bit, setQuantize4bit] = useState(true)
@@ -76,7 +71,13 @@ export default function App() {
   const [audioUrl, setAudioUrl] = useState('')
   const [elapsed, setElapsed] = useState('')
   const [duration, setDuration] = useState('')
-  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
+  const [jobId, setJobId] = useState('')
+  const [musicPhase, setMusicPhase] = useState<
+    | { type: 'queued'; position: number }
+    | { type: 'loading' }
+    | { type: 'progress'; current: number; total: number }
+    | null
+  >(null)
 
   // ── UI state ─────────────────────────────────────────────────────
   const [templateKey, setTemplateKey] = useState(0)
@@ -84,23 +85,37 @@ export default function App() {
   const [lyricsLoading, setLyricsLoading] = useState(false)
   const [musicLoading, setMusicLoading] = useState(false)
   const [error, setError] = useState('')
+  const [configLoaded, setConfigLoaded] = useState(false)
+  const [backendError, setBackendError] = useState(false)
 
   useEffect(() => {
-    fetchVersions()
-      .then(({ versions, codec_versions }) => {
-        if (versions.length) {
-          setAvailableVersions(versions)
-          setVersionLabel(versions[0])
-        }
-        if (codec_versions.length) {
-          setAvailableCodecs(codec_versions)
-          setCodecVersion(codec_versions[0])
-        }
+    fetchConfig()
+      .then((config) => {
+        setAvailableVersions(config.versions)
+        setAvailableCodecs(config.codec_versions)
+        setVersionLabel(config.music_defaults.version_label)
+        setCodecVersion(config.music_defaults.codec_version)
+        setSeed(config.music_defaults.seed)
+        setKeepModelLoaded(config.music_defaults.keep_model_loaded)
+        setQuantize4bit(config.music_defaults.quantize_4bit)
+        setOffloadMode(config.music_defaults.offload_mode)
+        setCfgScale(config.music_defaults.cfg_scale)
+        setTopk(config.music_defaults.topk)
+        setMaxSeconds(config.music_defaults.max_seconds)
+        setOllamaUrl(config.ollama_defaults.ollama_url)
+        setModel(config.ollama_defaults.model)
+        setLanguage(config.ollama_defaults.language)
+        setSongStructure(config.ollama_defaults.song_structure)
+        setVocal(config.ollama_defaults.vocal)
+        setTemperature(config.ollama_defaults.temperature)
+        setTheme(config.ollama_defaults.theme)
+        setConfigLoaded(true)
       })
-      .catch(() => {})
+      .catch(() => setBackendError(true))
   }, [])
 
   useEffect(() => {
+    if (!ollamaUrl) return
     fetchOllamaModels(ollamaUrl)
       .then(models => {
         setOllamaModels(models)
@@ -154,16 +169,42 @@ export default function App() {
     }
   }, [ollamaUrl, model, language, songStructure, vocal, temperature, theme, tags])
 
-  const handleMusicGenerate = useCallback(() => {
+  const handleMusicGenerate = useCallback(async () => {
     setMusicLoading(true)
-    setProgress(null)
+    setMusicPhase(null)
     setAudioUrl('')
     setElapsed('')
     setDuration('')
     setError('')
 
-    generateMusic(
-      {
+    const onEvent = (event: MusicEvent) => {
+      if (event.type === 'queued') {
+        setMusicPhase({ type: 'queued', position: event.position })
+      } else if (event.type === 'loading') {
+        setMusicPhase({ type: 'loading' })
+      } else if (event.type === 'progress') {
+        setMusicPhase({ type: 'progress', current: event.current, total: event.total })
+      } else if (event.type === 'done') {
+        setAudioUrl(event.file_url)
+        setElapsed(event.elapsed)
+        setDuration(event.duration)
+        setMusicLoading(false)
+        setMusicPhase(null)
+        setJobId('')
+      } else if (event.type === 'cancelled') {
+        setMusicLoading(false)
+        setMusicPhase(null)
+        setJobId('')
+      } else {
+        setError(event.message)
+        setMusicLoading(false)
+        setMusicPhase(null)
+        setJobId('')
+      }
+    }
+
+    try {
+      const { job_id, position } = await startMusic({
         tags,
         lyrics,
         version_label: versionLabel,
@@ -176,38 +217,33 @@ export default function App() {
         keep_model_loaded: keepModelLoaded,
         offload_mode: offloadMode,
         quantize_4bit: quantize4bit,
-      },
-      (event: MusicEvent) => {
-        if (event.type === 'progress') {
-          setProgress({ current: event.current, total: event.total })
-        } else if (event.type === 'done') {
-          setAudioUrl(event.file_url)
-          setElapsed(event.elapsed)
-          setDuration(event.duration)
-          setMusicLoading(false)
-          setProgress(null)
-        } else {
-          setError(event.message)
-          setMusicLoading(false)
-          setProgress(null)
-        }
-      },
-    )
+      })
+      setJobId(job_id)
+      setMusicPhase({ type: 'queued', position })
+      watchJob(job_id, onEvent)
+    } catch (e) {
+      setError(String(e))
+      setMusicLoading(false)
+      setMusicPhase(null)
+    }
   }, [
     tags, lyrics, versionLabel, codecVersion, seed,
     maxSeconds, topk, temperature, cfgScale,
     keepModelLoaded, offloadMode, quantize4bit,
   ])
 
-  const sharedOllamaProps = {
-    ollama_url: ollamaUrl, model, language,
-    song_structure: songStructure, vocal, temperature,
-  }
-  void sharedOllamaProps
+  const handleCancelMusic = useCallback(() => {
+    if (!jobId) return
+    cancelJob(jobId).catch(() => {})
+  }, [jobId])
 
   return (
     <div className="app">
       <h2>GenerateMusic</h2>
+
+      {backendError && (
+        <div className="error-box">バックエンドに接続できません</div>
+      )}
 
       {/* ── Ollama Settings ───────────────────────────────────────── */}
       <section className="card">
@@ -280,21 +316,21 @@ export default function App() {
         <button
           className="btn-secondary"
           onClick={handleTagsGenerate}
-          disabled={tagsLoading}
+          disabled={!configLoaded || tagsLoading}
         >
           {tagsLoading ? '生成中…' : '① タグ生成'}
         </button>
         <button
           className="btn-secondary"
           onClick={handleLyricsGenerate}
-          disabled={lyricsLoading}
+          disabled={!configLoaded || lyricsLoading}
         >
           {lyricsLoading ? '生成中…' : '② 作詞'}
         </button>
         <button
           className="btn-primary"
           onClick={handleMusicGenerate}
-          disabled={musicLoading}
+          disabled={!configLoaded || musicLoading}
         >
           {musicLoading ? '作曲中…' : '③ 作曲開始'}
         </button>
@@ -421,16 +457,21 @@ export default function App() {
       {/* ── Progress ──────────────────────────────────────────────── */}
       {musicLoading && (
         <div className="progress-wrap">
-          {progress ? (
+          {musicPhase?.type === 'progress' ? (
             <>
               <div className="progress-label">
-                作曲中: {progress.current} / {progress.total} フレーム
+                作曲中: {musicPhase.current} / {musicPhase.total} フレーム
               </div>
-              <progress value={progress.current} max={progress.total} />
+              <progress value={musicPhase.current} max={musicPhase.total} />
             </>
+          ) : musicPhase?.type === 'queued' ? (
+            <div className="progress-label">待機中（あなたは{musicPhase.position + 1}番目）</div>
           ) : (
             <div className="progress-label">モデル読み込み中…</div>
           )}
+          <button className="btn-secondary" onClick={handleCancelMusic}>
+            キャンセル
+          </button>
         </div>
       )}
 

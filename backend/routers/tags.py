@@ -2,10 +2,11 @@ import asyncio
 import time
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 
+from schemas import TagsRequest, TagsResponse
 from services.ollama import list_models, ollama_chat, parse_tags
 from services.prompts import DEFAULT_TAGS_SYSTEM, DEFAULT_TAGS_USER
+from utils import format_elapsed
 
 router = APIRouter()
 
@@ -18,26 +19,6 @@ async def get_ollama_models(url: str = Query(default="http://localhost:11434")):
         return {"models": models}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Ollama接続エラー: {e}")
-
-
-class TagsRequest(BaseModel):
-    ollama_url: str = "http://localhost:11434"
-    model: str = "qwen2.5:7b"
-    language: str = "Japanese"
-    song_structure: str = "Medium"
-    vocal: str = "female_vocal"
-    temperature: float = 1.0
-    theme: str = "春の別れ、切ない恋の歌"
-
-
-class TagsResponse(BaseModel):
-    tags: str
-    elapsed: str
-
-
-def _fmt_elapsed(seconds: float) -> str:
-    mins, secs = divmod(int(seconds), 60)
-    return f"{mins}分{secs}秒" if mins else f"{secs}秒"
 
 
 @router.post("/api/tags", response_model=TagsResponse)
@@ -58,6 +39,6 @@ async def generate_tags(request: TagsRequest) -> TagsResponse:
                 DEFAULT_TAGS_SYSTEM, user_msg, request.temperature,
             ),
         )
-        return TagsResponse(tags=parse_tags(raw), elapsed=_fmt_elapsed(time.time() - t0))
+        return TagsResponse(tags=parse_tags(raw), elapsed=format_elapsed(time.time() - t0))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
