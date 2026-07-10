@@ -140,7 +140,7 @@ models/
 [Ollama](https://ollama.com/) をインストールし、使用するモデルを pull してください。
 
 ```bash
-ollama pull qwen2.5:7b
+ollama pull llama3.1:8b
 ```
 
 ---
@@ -199,7 +199,7 @@ npm run dev
 | Seed | 乱数シード（-1 でランダム） | -1 |
 | CFG Scale | Classifier-Free Guidance 強度 | 1.5 |
 | Top-k | サンプリング候補数 | 50 |
-| 最大秒数 | 生成する音楽の最大長 | 210 秒 |
+| 最大秒数 | 生成する音楽の最大長 | 280 秒 |
 | keep_model_loaded | 生成後もモデルを VRAM に保持 | OFF |
 | quantize_4bit | 4 ビット量子化（VRAM 節約） | ON |
 | offload_mode | モデルオフロード方式 | auto |

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class OllamaRequestBase(BaseModel):
     ollama_url: str = "http://localhost:11434"
-    model: str = "qwen2.5:7b"
+    model: str = "llama3.1:8b"
     language: str = "Japanese"
     song_structure: str = "Medium"
     vocal: str = "female_vocal"
@@ -35,7 +35,7 @@ class MusicRequest(BaseModel):
     version_label: str = "3B-happy-new-year (latest)"
     codec_version: str = "oss-20260123"
     seed: int = -1
-    max_seconds: int = 210
+    max_seconds: int = 280
     topk: int = 50
     temperature: float = 1.0
     cfg_scale: float = 1.5

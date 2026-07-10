@@ -65,7 +65,7 @@ export default function App() {
   // ── Generation params ────────────────────────────────────────────
   const [cfgScale, setCfgScale] = useState(1.5)
   const [topk, setTopk] = useState(50)
-  const [maxSeconds, setMaxSeconds] = useState(210)
+  const [maxSeconds, setMaxSeconds] = useState(280)
 
   // ── Output ───────────────────────────────────────────────────────
   const [audioUrl, setAudioUrl] = useState('')
